@@ -88,7 +88,7 @@ const Navbar = () => {
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link to="/contact">
+                  <Link to="/qr-code">
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                       Contact
                     </NavigationMenuLink>

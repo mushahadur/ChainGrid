@@ -1,299 +1,387 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-// import toast from 'react-hot-toast';
+import { useToast } from '@/components/ui/use-toast';
+
+// Constants
+const VALIDATION_RULES = {
+  name: {
+    required: true,
+    minLength: 3,
+    maxLength: 255,
+    pattern: /^[a-zA-Z\s-]+$/,
+    message: 'Name can only contain letters, spaces, and hyphens',
+  },
+  username: {
+    required: true,
+    minLength: 3,
+    maxLength: 255,
+    pattern: /^[a-zA-Z0-9_]+$/,
+    message: 'Username can only contain letters, numbers, and underscores',
+  },
+  email: {
+    required: true,
+    pattern: /\S+@\S+\.\S+/,
+    message: 'Invalid email format',
+  },
+  password: {
+    required: true,
+    minLength: 8,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+    message: 'Password must be at least 8 characters with one uppercase, one lowercase, and one number.',
+  },
+};
 
 const Register = () => {
-  // Extract referId from URL query parameters
-  const queryParams = new URLSearchParams(window.location.search);
-  const referId = queryParams.get('referId') || '';
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Extract referId from URL
+  const getReferId = () => new URLSearchParams(window.location.search).get('referId') || '';
+  const referId = getReferId();
 
   const [formData, setFormData] = useState({
+    name: '',
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    referralCode: referId, // Initialize with referId if present
+    password_confirmation: '',
+    referral_code: referId,
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const [touched, setTouched] = useState({});
 
-  const validate = () => {
-    const newErrors = {}; 
+  // Validation function
+  const validateField = useCallback((name, value) => {
+    const rule = VALIDATION_RULES[name];
+    if (!rule) return '';
 
-    // Username validation
-    if (!formData.username) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    } else if (formData.username.length > 20) {
-      newErrors.username = 'Username must not exceed 20 characters';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+    if (rule.required && !value.trim()) return `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+    if (value && rule.minLength && value.length < rule.minLength)
+      return `${name.charAt(0).toUpperCase() + name.slice(1)} must be at least ${rule.minLength} characters`;
+    if (value && rule.maxLength && value.length > rule.maxLength)
+      return `${name.charAt(0).toUpperCase() + name.slice(1)} must not exceed ${rule.maxLength} characters`;
+    if (value && rule.pattern && !rule.pattern.test(value)) return rule.message;
+
+    return '';
+  }, []);
+
+  const validateForm = useCallback(() => {
+    const newErrors = {};
+    Object.keys(VALIDATION_RULES).forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) newErrors[field] = error;
+    });
+
+    if (!formData.password_confirmation) {
+      newErrors.password_confirmation = 'Please confirm your password';
+    } else if (formData.password_confirmation !== formData.password) {
+      newErrors.password_confirmation = 'Passwords must match';
     }
 
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
+    return newErrors;
+  }, [formData, validateField]);
 
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).*$/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
-    }
+  // Handle input changes
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+    },
+    [errors]
+  );
 
-    // Confirm Password validation
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.confirmPassword !== formData.password) {
-      newErrors.confirmPassword = 'Passwords must match';
-    }
+  // Handle field blur
+  const handleBlur = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setTouched((prev) => ({ ...prev, [name]: true }));
 
-    // Referral code is optional, no validation needed
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      if (name === 'password_confirmation') {
+        const confirmError = value !== formData.password ? 'Passwords must match' : '';
+        setErrors((prev) => ({ ...prev, password_confirmation: confirmError }));
+      } else {
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error }));
+      }
+    },
+    [formData.password, validateField]
+  );
+
+  // API call
+  const registerUser = async (userData) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.errors) {
+          throw { message: 'Validation error', errors: data.errors };
+        }
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Registration API Error:', error);
+      throw error;
+    }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    if (!validate()) {
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       setIsSubmitting(false);
-      toast.error('Please fix the errors in the form');
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors below.',
+        variant: 'destructive',
+      });
       return;
     }
 
     try {
-      const payload = {
-        username: formData.username,
-        email: formData.email,
+      const apiData = {
+        name: formData.name.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        password_confirmation: formData.confirmPassword,
-        referral_code: formData.referralCode || null,
+        password_confirmation: formData.password_confirmation,
+        ...(formData.referral_code.trim() && { referral_code: formData.referral_code.trim() }),
       };
 
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/register`, payload);
+      const response = await registerUser(apiData);
 
-      console.log('Registration response:', response.data); // Debug
-
-      if (response.data.token && response.data.user) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        toast.success('Registration successful! Please verify your OTP.');
-        navigate('/otp');
-      } else {
-        toast.error(response.data.message || 'Registration failed');
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'An error occurred during registration';
-      const apiErrors = error.response?.data?.errors || {};
-      setErrors({
-        ...errors,
-        ...Object.keys(apiErrors).reduce((acc, key) => ({
-          ...acc,
-          [key]: apiErrors[key][0],
-        }), {}),
+      toast({
+        title: 'Success',
+        description: 'Registration successful! Check your email for OTP.',
       });
-      toast.error(errorMessage);
-      console.error('Registration error:', error);
+
+      // Store token securely (e.g., in state management or HTTP-only cookie)
+      // Avoid localStorage for sensitive data
+      navigate('/otp');
+    } catch (error) {
+      if (error.errors) {
+        setErrors(error.errors);
+        toast({
+          title: 'Validation Error',
+          description: 'Please fix the errors below.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error.message || 'Registration failed. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    if (isSubmitting) {
-      validate();
-    }
-  }, [formData, isSubmitting]);
-
   return (
-    <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-[#0f172a] text-[#e0e7ff] font-inter">
-      {/* Background elements */}
-      <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
-
-      {/* Floating elements */}
-      <div className="absolute top-1/3 right-10 md:right-1/6 hidden md:block">
-        <div className="w-16 h-16 bg-blue-500/20 backdrop-blur-sm rounded-xl floating"></div>
-      </div>
-      <div className="absolute bottom-1/4 left-10 md:left-1/5 hidden md:block">
-        <div className="w-12 h-12 bg-purple-500/20 backdrop-blur-sm rounded-xl floating" style={{ animationDelay: '0.5s' }}></div>
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-4xl">
-        <div className="bg-secondary/80 backdrop-blur-sm border border-blue-500/20 rounded-3xl p-10 shadow-xl">
-          <div className="mb-10 text-center">
-            <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent glow-text tracking-tight">
-              Register for <span className="text-white">ChainGrid</span>
+    <section className="relative min-h-screen pt-20 mt-20 pb-16 bg-slate-900 text-slate-100">
+      <div className="container mx-auto px-4 max-w-md">
+        <div className="bg-slate-800/80 backdrop-blur-md border border-blue-500/20 rounded-2xl p-8 shadow-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Join ChainGrid
             </h1>
-            <p className="mt-4 text-gray-300 max-w-xl mx-auto text-lg">
-              Create your account to start mining cryptocurrency securely and efficiently.
-            </p>
+            <p className="mt-2 text-slate-400 text-sm">Create your account to start mining cryptocurrency</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="username" className="block text-sm font-semibold mb-2 text-gray-300">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                value={formData.username}
-                onChange={handleChange}
-                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
-                  errors.username ? 'border-red-500' : ''
-                }`}
-                placeholder="Enter your username"
-              />
-              {errors.username && <p className="mt-2 text-sm text-red-500">{errors.username}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold mb-2 text-gray-300">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
-                  errors.email ? 'border-red-500' : ''
-                }`}
-                placeholder="you@example.com"
-              />
-              {errors.email && <p className="mt-2 text-sm text-red-500">{errors.email}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold mb-2 text-gray-300">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
-                  errors.password ? 'border-red-500' : ''
-                }`}
-                placeholder="Enter your password"
-              />
-              {errors.password && <p className="mt-2 text-sm text-red-500">{errors.password}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-2 text-gray-300">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
-                  errors.confirmPassword ? 'border-red-500' : ''
-                }`}
-                placeholder="Re-enter your password"
-              />
-              {errors.confirmPassword && <p className="mt-2 text-sm text-red-500">{errors.confirmPassword}</p>}
-            </div>
-
-            <div className="mb-2">
-              <label htmlFor="referralCode" className="block text-sm font-semibold mb-2 text-gray-300">
-                Referral Code (Optional)
-              </label>
-              {referId ? (
+          {/* Form */}
+          <div className="space-y-4">
+              {/* Name Field */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium mb-2 text-slate-300">
+                  Full Name
+                </label>
                 <input
-                  id="referralCode"
-                  name="referralCode"
+                  id="name"
+                  name="name"
                   type="text"
-                  readOnly
-                  value={referId}
-                  className="w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300"
-                  placeholder="Enter referral code"
-                />
-              ) : (
-                <input
-                  id="referralCode"
-                  name="referralCode"
-                  type="text"
-                  value={formData.referralCode}
+                  value={formData.name}
                   onChange={handleChange}
-                  className="w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                />
+                {errors.name && touched.name && (
+                  <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+                )}
+              </div>
+
+              {/* Username Field */}
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-2 text-slate-300">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${errors.username ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  placeholder="Choose a username"
+                  autoComplete="username"
+                />
+                {errors.username && touched.username && (
+                  <p className="mt-1 text-sm text-red-400">{errors.username}</p>
+                )}
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-2 text-slate-300">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+                {errors.email && touched.email && (
+                  <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-2 text-slate-300">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                />
+                {errors.password && touched.password && (
+                  <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+                )}
+              </div>
+
+              {/* Confirm Password Field */}
+              <div>
+                <label htmlFor="password_confirmation" className="block text-sm font-medium mb-2 text-slate-300">
+                  Confirm Password
+                </label>
+                <input
+                  id="password_confirmation"
+                  name="password_confirmation"
+                  type="password"
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${errors.password_confirmation ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  placeholder="Confirm your password"
+                  autoComplete="new-password"
+                />
+                {errors.password_confirmation && touched.password_confirmation && (
+                  <p className="mt-1 text-sm text-red-400">{errors.password_confirmation}</p>
+                )}
+              </div>
+
+              {/* Referral Code Field */}
+              <div>
+                <label htmlFor="referral_code" className="block text-sm font-medium mb-2 text-slate-300">
+                  Referral Code <span className="text-slate-500">(Optional)</span>
+                </label>
+                <input
+                  id="referral_code"
+                  name="referral_code"
+                  type="text"
+                  value={formData.referral_code}
+                  onChange={handleChange}
+                  readOnly={!!referId}
+                  className={`w-full px-4 py-3 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200
+                    ${referId ? 'cursor-not-allowed opacity-75' : 'hover:border-slate-500'}`}
                   placeholder="Enter referral code"
                 />
-              )}
+                {referId && (
+                  <p className="mt-1 text-xs text-blue-400">Referral code applied from invite link</p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 
+                  disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed
+                  rounded-lg font-semibold text-white shadow-lg hover:shadow-blue-500/25 
+                  transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-lg shadow-lg shadow-blue-500/30 text-white font-extrabold text-lg transition-all duration-300"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Registering...' : 'Register'}
-            </button>
-          </form>
-
-          <p className="mt-8 text-center text-gray-400 text-sm">
-            Already have an account?{' '}
-            <a href="/login" className="text-blue-400 hover:text-blue-600 font-semibold">
-              Login here
-            </a>
-          </p>
+            {/* Footer */}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-slate-400">
+                Already have an account?{' '}
+                <button
+                  onClick=''
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
+                >
+                  Sign in here
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <style jsx>{`
-        .gradient-text {
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .glow-text {
-          text-shadow: 0 0 8px rgba(139, 92, 246, 0.7), 0 0 15px rgba(59, 130, 246, 0.7);
-        }
-        .input-glow:focus {
-          outline: none;
-          box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.7);
-          border-color: #3b82f6;
-          background-color: rgba(59, 130, 246, 0.1);
-        }
-        .floating {
-          animation: float 6s ease-in-out infinite;
-        }
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        .font-inter {
-          font-family: 'Inter', sans-serif;
-        }
-      `}</style>
     </section>
   );
 };

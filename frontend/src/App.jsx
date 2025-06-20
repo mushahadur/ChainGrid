@@ -9,6 +9,8 @@ import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Otp from "@/pages/Otp";
+import DowanloadQRCode from "@/pages/DowanloadQRCode";
 import AdminDashboard from "./components/backend/AdminDashboard";
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
             <Route path="*" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/otp" element={<Otp />} />
+            <Route path="/qr-code" element={<DowanloadQRCode />} />
             <Route path="/admin/*" element={<AdminDashboard />} />
           </Routes>
         </main>

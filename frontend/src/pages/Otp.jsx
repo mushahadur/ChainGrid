@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.chaingrid.xyz'; // Adjust as needed
+// const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.chaingrid.xyz'; // Adjust as needed
 
 const Otp = () => {
   const navigate = useNavigate();
@@ -65,18 +65,7 @@ const Otp = () => {
 
   return (
     <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-[#0f172a] text-[#e0e7ff] font-inter">
-      <div className="absolute inset-0 grid grid-cols-12 grid-rows-12 pointer-events-none select-none opacity-10">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <img
-            key={i}
-            alt="Hexagon pattern tile"
-            className="col-span-1 row-span-1"
-            height="40"
-            src={`https://storage.googleapis.com/a1aa/image/hexagon-${i}.jpg`}
-            width="40"
-          />
-        ))}
-      </div>
+     
       <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
 
@@ -100,7 +89,7 @@ const Otp = () => {
 
           {errors.submit && <p className="text-center text-red-500 mb-4">{errors.submit}</p>}
 
-          <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label htmlFor="otp" className="block text-sm font-semibold mb-2 text-gray-300">
                 OTP Code
@@ -111,7 +100,7 @@ const Otp = () => {
                 type="text"
                 value={formData.otp}
                 onChange={handleChange}
-                className={`w-full rounded-xl bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-4 input-glow transition duration-300 ${
+                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
                   errors.otp ? 'border-red-500' : ''
                 }`}
                 placeholder="Enter 6-digit OTP"
@@ -122,19 +111,20 @@ const Otp = () => {
 
             <button
               type="submit"
-              className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-xl shadow-lg shadow-blue-500/30 text-white font-extrabold text-lg transition-all duration-300"
+              className="w-full py-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-lg shadow-lg shadow-blue-500/30 text-white font-extrabold text-lg transition-all duration-300"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Verifying...' : 'Verify OTP'}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-gray-400 text-sm">
+        <p className="mt-8 text-center text-red-400 text-sm">Please check your mail inbox !</p>
+          {/* <p className="mt-8 text-center text-gray-400 text-sm">
             Didn't receive an OTP?{' '}
             <a href="#" className="text-blue-400 hover:text-blue-600 font-semibold">
               Resend OTP
             </a>
-          </p>
+          </p> */}
         </div>
       </div>
 
