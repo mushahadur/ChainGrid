@@ -10,6 +10,7 @@ use App\Http\Controllers\TagController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/send-otp', [AuthController::class, 'otpSend']);
+Route::post('/set-otp', [AuthController::class, 'setData']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

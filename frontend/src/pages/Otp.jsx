@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
-// const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.chaingrid.xyz'; // Adjust as needed
 
 const Otp = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const email = location.state?.email || ''; // Get email from Register.jsx
-
   const [formData, setFormData] = useState({
     otp: '',
+    token: localStorage.getItem('otp_token') || '', // Assume token is stored from set-data
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,6 +18,10 @@ const Otp = () => {
       newErrors.otp = 'OTP is required';
     } else if (!/^\d{6}$/.test(formData.otp)) {
       newErrors.otp = 'OTP must be a 6-digit number';
+    }
+
+    if (!formData.token) {
+      newErrors.token = 'Session token is missing. Please request a new OTP.';
     }
 
     setErrors(newErrors);
@@ -36,23 +36,31 @@ const Otp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
 
-    if (validate()) {
-      try {
-        const response = await axios.post(`${API_BASE_URL}/public/otp/`, {
-          email,
-          otp: formData.otp,
-        });
+    if (!validate()) {
+      setIsSubmitting(false);
+      return;
+    }
 
-        console.log('OTP verification successful:', response.data);
-        // Redirect to success page or dashboard
-        navigate('/dashboard'); // Adjust the redirect URL as needed
-      } catch (error) {
-        console.error('OTP verification failed:', error);
-        setErrors({ submit: 'OTP verification failed. Please try again.' });
-        setIsSubmitting(false);
+    try {
+      // Verify OTP
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-otp`, {
+        token: formData.token,
+        otp: formData.otp,
+      });
+
+      if (response.data.success) {
+        localStorage.removeItem('otp_token'); // Clean up token
+        navigate('/download'); // Redirect to download path
+      } else {
+        setErrors({ submit: response.data.message || 'OTP verification failed.' });
       }
-    } else {
+    } catch (error) {
+      setErrors({
+        submit: error.response?.data?.message || 'OTP verification failed. Please try again.',
+      });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -64,97 +72,65 @@ const Otp = () => {
   }, [formData, isSubmitting]);
 
   return (
-    <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 overflow-hidden bg-[#0f172a] text-[#e0e7ff] font-inter">
-     
-      <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+    <section className="relative min-h-screen flex items-center justify-center bg-gray-900 text-white font-inter">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10"></div>
+      <div className="relative z-10 w-full max-w-md mx-auto p-8 bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-500/30">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            Verify OTP
+          </h1>
+          <p className="mt-3 text-gray-300 text-sm">
+            Enter the 6-digit OTP sent to your email to verify your account.
+          </p>
+        </div>
 
-      <div className="absolute top-1/3 right-10 md:right-1/6 hidden md:block">
-        <div className="w-16 h-16 bg-blue-500/20 backdrop-blur-sm rounded-xl floating"></div>
-      </div>
-      <div className="absolute bottom-1/4 left-10 md:left-1/5 hidden md:block">
-        <div className="w-12 h-12 bg-purple-500/20 backdrop-blur-sm rounded-xl floating" style={{ animationDelay: '0.5s' }}></div>
-      </div>
+        {errors.submit && (
+          <p className="text-center text-red-400 mb-4 text-sm">{errors.submit}</p>
+        )}
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-4xl">
-        <div className="bg-secondary/80 backdrop-blur-sm border border-blue-500/20 rounded-3xl p-10 shadow-xl">
-          <div className="mb-10 text-center">
-            <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent glow-text tracking-tight">
-              Verify OTP for <span className="text-white">ChainGrid</span>
-            </h1>
-            <p className="mt-4 text-gray-300 max-w-xl mx-auto text-lg">
-              Enter the 6-digit OTP sent to {email || 'your email'} to verify your account.
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="otp" className="block text-sm font-medium text-gray-200 mb-2">
+              OTP Code
+            </label>
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              value={formData.otp}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 rounded-lg bg-gray-700/50 border ${
+                errors.otp ? 'border-red-500' : 'border-blue-500/40'
+              } text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-center tracking-widest`}
+              placeholder="123456"
+              maxLength="6"
+              autoComplete="off"
+            />
+            {errors.otp && <p className="mt-2 text-sm text-red-400">{errors.otp}</p>}
+            {errors.token && <p className="mt-2 text-sm text-red-400">{errors.token}</p>}
           </div>
 
-          {errors.submit && <p className="text-center text-red-500 mb-4">{errors.submit}</p>}
+          <button
+            type="submit"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-lg text-white font-semibold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+          </button>
+        </form>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="otp" className="block text-sm font-semibold mb-2 text-gray-300">
-                OTP Code
-              </label>
-              <input
-                id="otp"
-                name="otp"
-                type="text"
-                value={formData.otp}
-                onChange={handleChange}
-                className={`w-full rounded-lg bg-background/50 border border-blue-500/30 text-white placeholder-gray-400 px-5 py-2 input-glow transition duration-300 ${
-                  errors.otp ? 'border-red-500' : ''
-                }`}
-                placeholder="Enter 6-digit OTP"
-                maxLength="6"
-              />
-              {errors.otp && <p className="mt-2 text-sm text-red-500">{errors.otp}</p>}
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-lg shadow-lg shadow-blue-500/30 text-white font-extrabold text-lg transition-all duration-300"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Verifying...' : 'Verify OTP'}
-            </button>
-          </form>
-
-        <p className="mt-8 text-center text-red-400 text-sm">Please check your mail inbox !</p>
-          {/* <p className="mt-8 text-center text-gray-400 text-sm">
-            Didn't receive an OTP?{' '}
-            <a href="#" className="text-blue-400 hover:text-blue-600 font-semibold">
-              Resend OTP
-            </a>
-          </p> */}
-        </div>
+        <p className="mt-6 text-center text-gray-400 text-sm">
+          Check your email (including spam/junk) for the OTP.
+        </p>
+        <p className="mt-2 text-center text-gray-400 text-sm">
+          Didn't receive an OTP?{' '}
+          <a href="/request-otp" className="text-blue-400 hover:underline">
+            Request a new one
+          </a>
+        </p>
       </div>
 
       <style jsx>{`
-        .gradient-text {
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .glow-text {
-          text-shadow: 0 0 8px rgba(139, 92, 246, 0.7), 0 0 15px rgba(59, 130, 246, 0.7);
-        }
-        .input-glow:focus {
-          outline: none;
-          box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.7);
-          border-color: #3b82f6;
-          background-color: rgba(59, 130, 246, 0.1);
-        }
-        .floating {
-          animation: float 6s ease-in-out infinite;
-        }
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
         .font-inter {
           font-family: 'Inter', sans-serif;
         }

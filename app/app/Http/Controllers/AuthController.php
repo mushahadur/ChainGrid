@@ -8,70 +8,176 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\SendOtp;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function otpSend(Request $request)
+
+    public function setData(Request $request): JsonResponse
     {
-        
-        // $request->validate([
-        //     'name' => 'required|string|max:255',
-        //     'username' => 'required|string|max:255',
-        //     'referral_code' => 'string|max:255',
-        //     'email' => 'required|string|email|max:255|unique:users',
-        //     'password' => 'required|string|min:8|confirmed',
-        // ]);
-        
-        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        // return response()->json(['otp' => $request->email]);
+        try {
+            // Validate request data
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'username' => ['required', 'string', 'max:255', 'unique:users'],
+                'referral_code' => ['nullable', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
 
-        session([
-            'otp' => $otp,
-            'name' => $request->email,
-            'username' => $request->email,
-            'referral_code' => $request->email,
-            'email' => $request->email,
-            'password' => Hash::make($request->email),
-        ]);
+            // Generate OTP and token
+            $otp = $this->generateOtp();
+            $token = Str::random(32);
 
-        return response()->json(['mas' => "set session"]);
-        
-        // if (session()->has('otp') && session()->has('email')) {
-        //     // Now use $email and $wallet as needed
-        //     // return view('example', compact('email', 'wallet'));
-        // } else {
-        //     return redirect()->back()->with('error', 'Session data not found!');
-        // }
+            // Prepare OTP session data
+            $otpData = [
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'username' => $validated['username'],
+                'referral_code' => $validated['referral_code'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'otp' => $otp,
+                'created_at' => now()->toDateTimeString(),
+            ];
 
+            // Store in cache with 5-minute TTL
+            Cache::put("otp_session_{$token}", $otpData, now()->addMinutes(5));
+
+            $check = Mail::to($validated['email'])->send(new SendOtp($otp));
+            if($check){
+                return response()->json([
+                    'success' => true,
+                    'message' => 'OTP generated and sent successfully',
+                    'token' => $token,
+                    'debug' => config('app.debug') ? ['otp' => $otp] : null,
+                ], 200);
+            }else{
+                return response()->json([
+                    'success' => true,
+                    'message' => 'OTP generated and sent successfully. Emal not send',
+                    'token' => $token,
+                    'debug' => config('app.debug') ? ['otp' => $otp] : null,
+                ], 200);
+            }
+            // Dispatch OTP sending (email/SMS) - implementation depends on your setup
+            // $this->dispatchOtp($validated['email'], $otp);
+
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'OTP generated and sent successfully',
+            //     'token' => $token,
+            //     'debug' => config('app.debug') ? ['otp' => $otp] : null,
+            // ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('OTP generation failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate OTP',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
+
+    private function dispatchOtp(string $email, int $otp): void
+    {
+        Mail::to($email)->send(new SendOtp($otp));
+    }
+
+    private function generateOtp(): int
+    {
+        return random_int(100000, 999999);
+    }
+    public function otpSend(Request $request): JsonResponse
+    {
+        try {
+            // Validate request data
+            $validated = $request->validate([
+                'token' => ['required', 'string', 'max:32'],
+                'otp' => ['required', 'numeric', 'digits:6'],
+            ]);
+
+            // Retrieve OTP session data from cache
+            $cacheKey = "otp_session_{$validated['token']}";
+            $otpData = Cache::get($cacheKey);
+
+            // Check if OTP session exists
+            if (!$otpData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or expired token',
+                ], 422);
+            }
+
+            // Verify OTP
+            if ((int)$otpData['otp'] !== (int)$validated['otp']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid OTP',
+                ], 422);
+            }
+
+            // Create new user
+            $user = User::create([
+                'name' => $otpData['name'],
+                'email' => $otpData['email'],
+                'username' => $otpData['username'],
+                'referral_code' => $otpData['referral_code'],
+                'password' => $otpData['password'],
+                'email_verified_at' => now(),
+            ]);
+
+            // Clear OTP session from cache
+            Cache::forget($cacheKey);
+
+            // Generate authentication token (if using Sanctum or similar)
+            // $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'username' => $user->username,
+                ],
+                // 'token' => $token, // Uncomment if using token-based auth
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('OTP verification failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to verify OTP',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+
+ 
     public function register(Request $request)
     {
-        if (session()->has('otp')) {
-            $otp = session('otp');
-            return response()->json(['otp' => $otp]);
-        }
-        else{
-            return response()->json([
-                'message' => 'Not find session OTP data',
-            ], 404);
-        }
-        // dd("soem");
-
-        $email = session('email');
-        $otp = session('otp');
-    
-        if ($email && $otp) {
-            return response()->json([
-                'email' => $email,
-                'otp' => $otp,
-            ]);
-        } else {
-            return response()->json([
-                'message' => 'Not find session data',
-            ], 404); // use 404 or 422 instead of 201 for error
-        }
-
-         $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255',
             'referral_code' => 'string|max:255',

@@ -112,7 +112,7 @@ const Register = () => {
   // API call
   const registerUser = async (userData) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/register`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/set-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,10 +120,11 @@ const Register = () => {
         },
         body: JSON.stringify(userData),
       });
-
+      
       const data = await response.json();
-
+      
       if (!response.ok) {
+        localStorage.setItem('otp_token', response.data.token);
         if (data.errors) {
           throw { message: 'Validation error', errors: data.errors };
         }
@@ -165,7 +166,6 @@ const Register = () => {
       };
 
       const response = await registerUser(apiData);
-
       toast({
         title: 'Success',
         description: 'Registration successful! Check your email for OTP.',
