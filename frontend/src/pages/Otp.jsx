@@ -6,7 +6,6 @@ const Otp = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     otp: '',
-    token: localStorage.getItem('otp_token') || '', // Assume token is stored from set-data
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,9 +19,6 @@ const Otp = () => {
       newErrors.otp = 'OTP must be a 6-digit number';
     }
 
-    if (!formData.token) {
-      newErrors.token = 'Session token is missing. Please request a new OTP.';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -44,17 +40,14 @@ const Otp = () => {
     }
 
     try {
-      // Verify OTP
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-otp`, {
-        token: formData.token,
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/verify-otp`, {
         otp: formData.otp,
       });
 
       if (response.data.success) {
-        localStorage.removeItem('otp_token'); // Clean up token
-        navigate('/download'); // Redirect to download path
+        navigate('/qr-code');
       } else {
-        setErrors({ submit: response.data.message || 'OTP verification failed.' });
+        setErrors({ submit: response.data.message || 'Invalid OTP. Please try again.' });
       }
     } catch (error) {
       setErrors({
@@ -65,10 +58,13 @@ const Otp = () => {
     }
   };
 
+
+
   useEffect(() => {
     if (isSubmitting) {
       validate();
     }
+
   }, [formData, isSubmitting]);
 
   return (
@@ -86,6 +82,9 @@ const Otp = () => {
 
         {errors.submit && (
           <p className="text-center text-red-400 mb-4 text-sm">{errors.submit}</p>
+        )}
+        {errors.success && (
+          <p className="text-center text-green-400 mb-4 text-sm">{errors.success}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,7 +106,6 @@ const Otp = () => {
               autoComplete="off"
             />
             {errors.otp && <p className="mt-2 text-sm text-red-400">{errors.otp}</p>}
-            {errors.token && <p className="mt-2 text-sm text-red-400">{errors.token}</p>}
           </div>
 
           <button
@@ -121,12 +119,6 @@ const Otp = () => {
 
         <p className="mt-6 text-center text-gray-400 text-sm">
           Check your email (including spam/junk) for the OTP.
-        </p>
-        <p className="mt-2 text-center text-gray-400 text-sm">
-          Didn't receive an OTP?{' '}
-          <a href="/request-otp" className="text-blue-400 hover:underline">
-            Request a new one
-          </a>
         </p>
       </div>
 

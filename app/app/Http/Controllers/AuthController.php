@@ -31,7 +31,6 @@ class AuthController extends Controller
 
             // Generate OTP and token
             $otp = $this->generateOtp();
-            $token = Str::random(32);
 
             // Prepare OTP session data
             $otpData = [
@@ -45,33 +44,25 @@ class AuthController extends Controller
             ];
 
             // Store in cache with 5-minute TTL
-            Cache::put("otp_session_{$token}", $otpData, now()->addMinutes(5));
+            Cache::put("cache_otp", $otpData, now()->addMinutes(50));
 
-            $check = Mail::to($validated['email'])->send(new SendOtp($otp));
+            // $check = Mail::to($validated['email'])->send(new SendOtp($otp));
+            $check = true;
             if($check){
                 return response()->json([
                     'success' => true,
                     'message' => 'OTP generated and sent successfully',
-                    'token' => $token,
                     'debug' => config('app.debug') ? ['otp' => $otp] : null,
                 ], 200);
             }else{
                 return response()->json([
                     'success' => true,
                     'message' => 'OTP generated and sent successfully. Emal not send',
-                    'token' => $token,
                     'debug' => config('app.debug') ? ['otp' => $otp] : null,
                 ], 200);
             }
             // Dispatch OTP sending (email/SMS) - implementation depends on your setup
             // $this->dispatchOtp($validated['email'], $otp);
-
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'OTP generated and sent successfully',
-            //     'token' => $token,
-            //     'debug' => config('app.debug') ? ['otp' => $otp] : null,
-            // ], 200);
 
         } catch (ValidationException $e) {
             return response()->json([
@@ -104,12 +95,11 @@ class AuthController extends Controller
         try {
             // Validate request data
             $validated = $request->validate([
-                'token' => ['required', 'string', 'max:32'],
                 'otp' => ['required', 'numeric', 'digits:6'],
             ]);
 
             // Retrieve OTP session data from cache
-            $cacheKey = "otp_session_{$validated['token']}";
+            $cacheKey = "cache_otp";
             $otpData = Cache::get($cacheKey);
 
             // Check if OTP session exists
@@ -173,8 +163,6 @@ class AuthController extends Controller
         }
     }
 
-
- 
     public function register(Request $request)
     {
         $validated = $request->validate([

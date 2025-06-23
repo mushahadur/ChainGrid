@@ -125,6 +125,7 @@ const Register = () => {
       
       if (!response.ok) {
         localStorage.setItem('otp_token', response.data.token);
+        localStorage.setItem('user_email', formData.email);
         if (data.errors) {
           throw { message: 'Validation error', errors: data.errors };
         }
