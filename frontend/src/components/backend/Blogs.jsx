@@ -34,6 +34,7 @@ const Blogs = () => {
     image_description: "",
     image: null,
     image_preview: null,
+    original_filename: "", // Original filename track করার জন্য
   });
   const { toast } = useToast();
 
@@ -82,13 +83,105 @@ const Blogs = () => {
     }
   };
 
+  // const handleCreateOrUpdate = async (e) => {
+  //   e.preventDefault();
+  //   const method = isEditMode ? "PUT" : "POST";
+  //   const url = isEditMode
+  //     ? `${import.meta.env.VITE_API_BASE_URL}/blogs/${currentBlog.id}`
+  //     : `${import.meta.env.VITE_API_BASE_URL}/blogs`;
+
+  //   try {
+  //     const formData = new FormData();
+      
+  //     // Basic fields
+  //     formData.append("title", currentBlog.title);
+  //     formData.append("excerpt", currentBlog.excerpt);
+  //     formData.append("content", currentBlog.content);
+  //     formData.append("author", currentBlog.author);
+  //     formData.append("author_role", currentBlog.author_role);
+      
+  //     if (currentBlog.category_id) {
+  //       formData.append("category_id", currentBlog.category_id);
+  //     }
+      
+  //     // Tags handling
+  //     currentBlog.tag_ids.forEach((tag, index) => {
+  //       formData.append(`tag_ids[${index}]`, tag.value);
+  //     });
+      
+  //     formData.append("image_description", currentBlog.image_description || "");
+      
+  //     // Image handling with original filename
+  //     if (currentBlog.image) {
+  //       // File এর original name preserve করার জন্য
+  //       const originalName = currentBlog.original_filename || currentBlog.image.name;
+        
+  //       // File কে সঠিক name দিয়ে append করা
+  //       formData.append("image", currentBlog.image, originalName);
+        
+  //       // Optional: Original filename আলাদাভাবে পাঠানো
+  //       formData.append("original_filename", originalName);
+  //     }
+      
+  //     if (isEditMode) {
+  //       formData.append("_method", "PUT");
+  //     }
+
+  //     // Debug: FormData এর content দেখার জন্য
+  //     console.log("FormData contents:");
+  //     for (let [key, value] of formData.entries()) {
+  //       if (value instanceof File) {
+  //         console.log(`${key}: File - ${value.name}, Size: ${value.size}`);
+  //       } else {
+  //         console.log(`${key}: ${value}`);
+  //       }
+  //     }
+
+  //     const response = await fetch(url, {
+  //       method: isEditMode ? "POST" : "POST", // Laravel এর জন্য POST ব্যবহার করা হচ্ছে
+  //       headers: { 
+  //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         // Content-Type header add করবেন না - FormData automatically set করবে
+  //       },
+  //       body: formData,
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (response.ok) {
+  //       toast({
+  //         title: isEditMode ? "Blog Updated" : "Blog Created",
+  //         description: `Blog "${data.blog.title}" has been ${isEditMode ? "updated" : "created"}.`,
+  //       });
+  //       setIsModalOpen(false);
+  //       fetchBlogs();
+  //       resetForm();
+  //     } else {
+  //       console.error("API Error:", data);
+  //       toast({
+  //         title: "Error",
+  //         description: data.errors ? Object.values(data.errors).join(", ") : "Failed to save.",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Request Error:", error);
+  //     toast({
+  //       title: "Error",
+  //       description: "An error occurred while saving the blog.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
+
+  
   const handleCreateOrUpdate = async (e) => {
     e.preventDefault();
     const method = isEditMode ? "PUT" : "POST";
     const url = isEditMode
       ? `${import.meta.env.VITE_API_BASE_URL}/blogs/${currentBlog.id}`
       : `${import.meta.env.VITE_API_BASE_URL}/blogs`;
-
+  
     try {
       const formData = new FormData();
       formData.append("title", currentBlog.title);
@@ -104,20 +197,19 @@ const Blogs = () => {
       });
       formData.append("image_description", currentBlog.image_description || "");
       if (currentBlog.image) {
-        formData.append("image", currentBlog.image);
+        formData.append("image", currentBlog.image, currentBlog.original_filename || currentBlog.image.name);
       }
       if (isEditMode) {
         formData.append("_method", "PUT");
       }
-
+  
       const response = await fetch(url, {
-        method: isEditMode ? "POST" : "POST",
+        method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: formData,
       });
-
+  
       const data = await response.json();
-
       if (response.ok) {
         toast({
           title: isEditMode ? "Blog Updated" : "Blog Created",
@@ -141,7 +233,7 @@ const Blogs = () => {
       });
     }
   };
-
+  
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this blog?")) return;
 
@@ -173,6 +265,7 @@ const Blogs = () => {
       tag_ids: blog.tags.map((tag) => ({ value: tag.id, label: tag.name })),
       image: null,
       image_preview: blog.image || null,
+      original_filename: "", // Edit mode এ নতুন file upload না করলে empty রাখা
     });
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -197,19 +290,53 @@ const Blogs = () => {
       image_description: "",
       image: null,
       image_preview: null,
+      original_filename: "",
     });
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setCurrentBlog({
-        ...currentBlog,
-        image: file,
-        image_preview: URL.createObjectURL(file),
+    if (!file) return;
+  
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+  
+    if (file.size > maxSize) {
+      toast({
+        title: "Error",
+        description: "File size should be less than 5MB.",
+        variant: "destructive",
       });
+      return;
     }
+  
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Please select a valid image file (JPEG, PNG, GIF).",
+        variant: "destructive",
+      });
+      return;
+    }
+  
+    const previewUrl = URL.createObjectURL(file);
+    setCurrentBlog({
+      ...currentBlog,
+      image: file,
+      image_preview: previewUrl,
+      original_filename: file.name,
+    });
   };
+
+  
+  // Cleanup function for URL.createObjectURL
+  useEffect(() => {
+    return () => {
+      if (currentBlog.image_preview && currentBlog.image_preview.startsWith('blob:')) {
+        URL.revokeObjectURL(currentBlog.image_preview);
+      }
+    };
+  }, [currentBlog.image_preview]);
 
   const blogColumns = [
     { name: "Title", selector: (row) => row.title, sortable: true, wrap: true },
@@ -449,6 +576,11 @@ const Blogs = () => {
                   onChange={handleImageChange}
                   className="bg-gray-800/50 border-blue-500/20 text-base text-white"
                 />
+                {currentBlog.original_filename && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    Selected: {currentBlog.original_filename}
+                  </p>
+                )}
                 {currentBlog.image_preview && (
                   <img
                     src={currentBlog.image_preview}

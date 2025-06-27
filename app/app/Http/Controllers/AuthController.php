@@ -46,8 +46,8 @@ class AuthController extends Controller
             // Store in cache with 5-minute TTL
             Cache::put("cache_otp", $otpData, now()->addMinutes(50));
 
-            // $check = Mail::to($validated['email'])->send(new SendOtp($otp));
-            $check = true;
+            $check = Mail::to($validated['email'])->send(new SendOtp($otp));
+            // $check = true;
             if($check){
                 return response()->json([
                     'success' => true,

@@ -17,9 +17,7 @@ class BlogController extends Controller
             ->orderBy('date', 'desc')
             ->get()
             ->map(function ($blog) {
-                if ($blog->image) {
-                   $blog->image = asset($blog->image);
-                }
+                $blog->image = $blog->image ? asset($blog->image) : null;
                 return $blog;
             });
 
@@ -38,7 +36,7 @@ class BlogController extends Controller
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:tags,id',
             'image_description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -48,12 +46,23 @@ class BlogController extends Controller
         $data = $validator->validated();
         $data['date'] = Carbon::now('Asia/Dhaka');
 
-        // Handle image upload
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('blogs-images', 'public');
-            $data['image'] = Storage::url($path); // Return URL like /storage/...
+            $image = $request->file('image');
+            $originalName = $image->getClientOriginalName();
+            $filename = $originalName;
+            $counter = 1;
+            $path = 'blogs/' . $filename;
+
+            while (Storage::disk('public')->exists($path)) {
+                $filename = pathinfo($originalName, PATHINFO_FILENAME) . '_' . $counter . '.' . $image->getClientOriginalExtension();
+                $path = 'blogs/' . $filename;
+                $counter++;
+            }
+
+            $path = $image->storeAs('blogs', $filename, 'public');
+            $data['image'] = Storage::url($path);
+            \Log::info('Image saved', ['path' => $path, 'url' => $data['image'], 'filename' => $filename]);
         }
-        // dd($request->hasFile('image'));
 
         $blog = Blog::create($data);
 
@@ -61,10 +70,9 @@ class BlogController extends Controller
             $blog->tags()->sync($data['tag_ids']);
         }
 
-        // Load related models and add full image URL
         $blog->load(['category', 'tags']);
         if ($blog->image) {
-            $blog->image = asset($blog->image); // Full URL like http://localhost:8000/storage/...
+            $blog->image = asset($blog->image);
         }
 
         return response()->json(['message' => 'Blog created', 'blog' => $blog], 201);
@@ -72,21 +80,20 @@ class BlogController extends Controller
 
     public function show(Blog $blog)
     {
-        
         try {
 
             $blog->load(['category', 'tags']);
-    
+
             // Append full image URL if image exists
             if ($blog->image) {
                 $blog->image = asset($blog->image);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'data' => $blog
             ], 200);
-    
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
