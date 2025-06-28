@@ -4,6 +4,7 @@ import DataTable from "react-data-table-component";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import TableSkeleton from "@/components/backend/TableSkeleton";
 import {
   Dialog,
   DialogContent,
@@ -165,18 +166,19 @@ const Tags = () => {
               Create Tag
             </Button>
           </div>
-          <DataTable
-            columns={tagColumns}
-            data={tags}
-            progressPending={isLoading}
-            pagination
-            highlightOnHover
-            customStyles={{
-              table: { style: { backgroundColor: "transparent" } },
-              headCells: { style: { backgroundColor: "#43434d", color: "White", fontWeight: "bold" } },
-              cells: { style: {backgroundColor: "#28282b", color: "White" } },
-            }}
-          />
+              <DataTable
+                columns={tagColumns}
+                data={tags}
+                progressPending={isLoading}
+                progressComponent={<TableSkeleton columns={tagColumns.length} />}
+                pagination
+                highlightOnHover
+                customStyles={{
+                  table: { style: { backgroundColor: 'transparent' } },
+                  headCells: { style: { backgroundColor: '#43434d', color: 'White', fontWeight: 'bold' } },
+                  cells: { style: { backgroundColor: '#28282b', color: 'White' } },
+                }}
+              />
         </div>
       </motion.div>
 
