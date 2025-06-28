@@ -313,7 +313,35 @@ const Blog = () => {
             <div className="w-full lg:w-2/3">
               {error && <p className="text-red-500 mb-4">{error}</p>}
               {isLoading ? (
-                <p className="text-center text-gray-400">Loading...</p>
+
+                 <div className="min-h-screen p-4 md:p-10">
+                    <div className="max-w-[1200px] mx-auto">
+
+                      <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Left Content */}
+                        <div className="flex-1 flex flex-col gap-6 md:flex-row md:gap-6">
+                          {[1, 2].map((_, i) => (
+                            <article key={i} className="bg-[#1E2A3A] rounded-lg overflow-hidden max-w-md w-full flex flex-col animate-pulse-skeleton">
+                              <div className="w-full h-[180px] bg-[#2A3A5A]"></div>
+                              <div className="p-4 flex flex-col gap-3">
+                                <div className="w-20 h-4 bg-[#2A3A5A] rounded"></div>
+                                <div className="w-36 h-6 bg-[#2A3A5A] rounded"></div>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-7 h-7 rounded-full bg-[#2A3A5A]"></div>
+                                  <div className="flex flex-col gap-1 flex-1">
+                                    <div className="w-24 h-4 bg-[#2A3A5A] rounded"></div>
+                                    <div className="w-16 h-3 bg-[#2A3A5A] rounded"></div>
+                                  </div>
+                                </div>
+                                <div className="w-full h-16 bg-[#2A3A5A] rounded"></div>
+                                <div className="w-24 h-4 bg-[#2A3A5A] rounded self-start"></div>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
               ) : hasNoData ? (
                 <p className="text-center text-gray-400 text-xl">No blog posts found.</p>
               ) : paginatedPosts.length === 0 ? (
