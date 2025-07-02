@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from '@/assets/images/logo.jpg';
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -48,7 +49,9 @@ const Navbar = () => {
                 className="flex items-center"
               >
                 <div className="w-8 h-8 mr-2 bg-blue-500 rounded-md flex items-center justify-center">
-                  <span className="text-white font-bold">CG</span>
+                  <span className="text-white font-bold">
+                    <img src={logo} alt="GC" />
+                  </span>
                 </div>
                 <span className="text-xl font-bold gradient-text">ChainGrid</span>
               </motion.div>
@@ -73,13 +76,7 @@ const Navbar = () => {
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/blog">
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      Blog
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
+               
                 <NavigationMenuItem>
                   <Link to="/about">
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
@@ -88,9 +85,9 @@ const Navbar = () => {
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link to="/qr-code">
+                  <Link to="/blog">
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                      Contact
+                      Blog
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>

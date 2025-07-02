@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import logo from '@/assets/images/logo.jpg';
 import { Facebook, Twitter, Instagram, Linkedin, Github } from "lucide-react";
 
 const Footer = () => {
@@ -18,7 +19,7 @@ const Footer = () => {
           >
             <div className="flex items-center mb-6">
               <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-                <span className="text-white font-bold">CG</span>
+              <img src={logo} alt="GC" />
               </div>
               <span className="text-xl font-bold gradient-text">ChainGrid</span>
             </div>
