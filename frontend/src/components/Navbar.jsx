@@ -178,6 +178,20 @@ const Navbar = () => {
             >
               Contact
             </Link>
+            <Link
+              to="/login"
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Register
+            </Link>
             <div className="pt-2">
               <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg">
                 Download App

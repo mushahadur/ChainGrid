@@ -65,9 +65,9 @@ const Hero = () => {
             <div className="relative mx-auto max-w-md">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl"></div>
               <div className="relative bg-secondary/80 backdrop-blur-sm border border-blue-500/20 rounded-3xl p-6 shadow-xl">
-                <div className="absolute -top-4 -right-4 w-16 h-16 bg-blue-500/80 rounded-2xl flex items-center justify-center rotate-12">
+                {/* <div className="absolute -top-4 -right-4 w-16 h-16 bg-blue-500/80 rounded-2xl flex items-center justify-center rotate-12">
                   <Cpu className="h-8 w-8 text-white" />
-                </div>
+                </div> */}
                 
                 <div className="mb-6 flex justify-between items-center">
                   <h3 className="text-xl font-bold text-white">ChainGrid Mining</h3>
