@@ -139,22 +139,15 @@
 <body>
   <div class="container" role="main">
     <img
-      src="https://storage.googleapis.com/a1aa/image/78dbe83f-a035-4cc8-b59b-ba788df8e352.jpg"
+      src="https://chaingrid.xyz/assets/logo-DKHvrMnS.jpg"
       alt="Company logo placeholder, blue and white"
       class="logo"
       width="80"
       height="80"
     />
     <h1>Verification Code</h1>
-    <p class="description">We have sent a one-time password (OTP) to your email address.</p>
+    <p class="description">We have sent a one-time password (OTP) to your email address. Please don't share your OTP.</p>
     <div class="otp-box" aria-label="Verification details">
-      <p class="label">Email Address</p>
-      <div class="email-row">
-        <span class="email-text">mdasadur135@gmail.com</span>
-        <button aria-label="Edit email" class="edit-button" type="button">
-          <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-        </button>
-      </div>
       <p class="label">Your OTP Code</p>
       <p class="otp-code">{{ $otp ?? "OTP" }}</p>
     </div>
