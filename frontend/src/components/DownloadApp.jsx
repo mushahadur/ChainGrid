@@ -3,6 +3,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Download, Apple, Smartphone } from "lucide-react";
+import logo from '@/assets/images/logo.jpg';
+import app_image from '@/assets/images/download-app.jpg';
 
 const DownloadApp = () => {
   return (
@@ -25,9 +27,11 @@ const DownloadApp = () => {
                 
                 <div className="flex justify-between items-center mb-8">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center mr-3">
-                      <span className="text-white font-bold">CG</span>
-                    </div>
+                  <div className="w-8 h-8 mr-2 bg-blue-500 rounded-md flex items-center justify-center">
+                  <span className="text-white font-bold">
+                    <img className="w-10 h-8 object-cover rounded-lg" src={logo} alt="Chain-Grid-Logo" title="Chain-Grid-Logo" />
+                  </span>
+                </div>
                     <span className="text-xl font-bold gradient-text">ChainGrid</span>
                   </div>
                   <div className="flex items-center">
@@ -38,14 +42,14 @@ const DownloadApp = () => {
                 
                 <div className="space-y-6 mb-8">
                   <img  
-                    className="w-full h-48 object-cover rounded-xl" 
+                    className="w-full h-full object-cover rounded-xl" 
                     alt="ChainGrid mobile app dashboard showing mining statistics and earnings"
-                   src="https://images.unsplash.com/photo-1659602228264-ea576c74dcff" />
+                    src={app_image} />
                   
                   <div className="bg-background/50 rounded-xl p-4">
                     <div className="flex justify-between mb-2">
                       <span className="text-sm text-gray-400">Daily Earnings</span>
-                      <span className="text-sm font-medium text-green-400">+0.0058 BTC</span>
+                      <span className="text-sm font-medium text-green-400">+0.0058 GDC</span>
                     </div>
                     <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
                       <div className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full" style={{ width: '65%' }}></div>
@@ -62,9 +66,19 @@ const DownloadApp = () => {
                 </div>
                 
                 <div className="flex justify-center">
-                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl py-5">
+                <Button
+                    onClick={() =>
+                      window.open(
+                        "https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share",
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    }
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl py-5"
+                  >
                     <Download className="mr-2 h-5 w-5" /> Start Mining
                   </Button>
+
                 </div>
               </div>
             </div>
@@ -120,10 +134,22 @@ const DownloadApp = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button className="app-button bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white rounded-xl py-6 px-8">
+              <Button onClick={() =>
+                      window.open(
+                        "https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share",
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    } className="app-button bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white rounded-xl py-6 px-8">
                 <Smartphone className="mr-2 h-5 w-5" /> Android App
               </Button>
-              <Button className="app-button bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white rounded-xl py-6 px-8">
+              <Button nonClick={() =>
+                      window.open(
+                        "https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share",
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    } className="app-button bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white rounded-xl py-6 px-8">
                 <Apple className="mr-2 h-5 w-5" /> iOS App
               </Button>
             </div>

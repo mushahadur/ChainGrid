@@ -169,7 +169,7 @@ const Register = () => {
       const response = await registerUser(apiData);
       toast({
         title: 'Success',
-        description: 'Registration successful! Check your email for OTP.',
+        description: 'Your mail send successful! Check your mail inbox for OTP.',
       });
 
       // Store token securely (e.g., in state management or HTTP-only cookie)

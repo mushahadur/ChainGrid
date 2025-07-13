@@ -19,7 +19,7 @@ const Footer = () => {
           >
             <div className="flex items-center mb-6">
               <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-              <img src={logo} alt="GC" />
+              <img className="w-10 h-8 object-cover rounded-lg" src={logo} alt="Chain-Grid-Logo" title="Chain-Grid-Logo" />
               </div>
               <span className="text-xl font-bold gradient-text">ChainGrid</span>
             </div>
@@ -27,10 +27,10 @@ const Footer = () => {
               Revolutionary web3 mining platform that allows users to mine cryptocurrency efficiently and securely.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+              <a href="https://www.facebook.com/p/ChainGrid-Network-61557825997971/" className="text-gray-400 hover:text-blue-400 transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+              <a href="https://x.com/Chain_Grid" className="text-gray-400 hover:text-blue-400 transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
@@ -65,8 +65,15 @@ const Footer = () => {
                 <Link to="/about" className="text-gray-400 hover:text-blue-400 transition-colors">About Us</Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-400 hover:text-blue-400 transition-colors">Contact</Link>
-              </li>
+              <a
+                  href="https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-blue-400 transition-colors"
+                >
+                  Download App
+                </a>
+                </li>
             </ul>
           </motion.div>
           
@@ -104,11 +111,11 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="text-gray-400">
                 <span className="block">Email:</span>
-                <a href="mailto:info@chaingrid.io" className="text-blue-400 hover:underline">info@chaingrid.io</a>
+                <a href="mailto:info@chaingrid.xyz" className="text-blue-400 hover:underline">info@chaingrid.xyz</a>
               </li>
               <li className="text-gray-400">
                 <span className="block">Support:</span>
-                <a href="mailto:support@chaingrid.io" className="text-blue-400 hover:underline">support@chaingrid.io</a>
+                <a href="mailto:support@chaingrid.xyz" className="text-blue-400 hover:underline">support@chaingrid.xyz</a>
               </li>
               <li className="text-gray-400">
                 <span className="block">Address:</span>

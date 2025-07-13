@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import qrcode from '@/assets/images/qrcode.png';
 // import QRCode from 'qrcode.react';
 import { useToast } from '@/components/ui/use-toast';
 // import { saveAs } from 'file-saver';
@@ -79,20 +80,27 @@ const DowanloadQRCode = () => {
           <div className="flex justify-center mb-6">
             <div className="p-4 rounded-lg shadow-md">
                 <div className="flex justify-content-center text-center">
-
-            <img alt="A QR code" class="w-80 h-80 mb-6" height="200" loading="lazy" src="https://storage.googleapis.com/a1aa/image/8b482c8f-ad0e-442f-f232-8ce3fd4bb07c.jpg" width="200"/>
+                <img  
+                    className="w-full h-full object-cover rounded-xl" 
+                    alt="ChainGrid mobile app dashboard showing mining statistics and earnings"
+                    src={qrcode} />
                 </div>
-                <p class="text-center text-gray-100 mb-4 px-4">
+                <p class="text-center text-gray-100 mt-4 px-4">
                     Use your mobile device to scan this QR code and quickly access the link.
                 </p>
             </div>
           </div>
-
         
 
           {/* Download Button */}
           <button
-            onClick={handleDownload}
+             onClick={() =>
+              window.open(
+                "https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share",
+                "_blank",
+                "noopener,noreferrer"
+              )
+            }
             className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg font-semibold text-white shadow-lg hover:shadow-blue-500/25 transition-all duration-200 flex items-center justify-center"
             aria-label="Download QR code"
           >
@@ -110,7 +118,7 @@ const DowanloadQRCode = () => {
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
               />
             </svg>
-            Download QR Code
+            Download App
           </button>
         </div>
       </div>

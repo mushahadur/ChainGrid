@@ -46,10 +46,22 @@ const Hero = () => {
               ChainGrid provides a secure, efficient, and user-friendly platform for cryptocurrency mining. Join thousands of miners already earning passive income.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button className="app-button text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-300">
+              <Button onClick={() =>
+                      window.open(
+                        "https://play.google.com/store/apps/details?id=com.chaingridNetwork.chaingrid&pcampaignid=web_share",
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    } className="app-button text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 rounded-xl shadow-lg shadow-blue-500/20 transition-all duration-300">
                 <Download className="mr-2 h-5 w-5" /> Download App
               </Button>
-              <Button variant="outline" className="text-lg px-8 py-6 border-blue-500/50 hover:bg-blue-500/10 rounded-xl transition-all duration-300">
+              <Button onClick={() =>
+                      window.open(
+                        "https://chaingrid.xyz/blog",
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    } variant="outline" className="text-lg px-8 py-6 border-blue-500/50 hover:bg-blue-500/10 rounded-xl transition-all duration-300">
                 Learn More <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
